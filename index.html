@@ -64,6 +64,7 @@
 		var clikTrivia = new ClikTrivia();
 		var questionCount = 1;
 		var questionAnswers = 0;
+		var correctAnswers = 0;
 		var currentQuestion;
 		
 		clik.onMessage = function(msg) {
@@ -104,7 +105,8 @@
 				
 				if ( correctAnswer )
 				{
-					clikTrivia.addScore(msg.participant, questionAnswers);
+					correctAnswers++;
+					clikTrivia.addScore(msg.participant, correctAnswers);
 				
 					//Update scores and question text
 					$("#score1").text("Player 1 - " + clikTrivia.getScorePos(0) + " pts");
@@ -142,6 +144,7 @@
 						currentQuestion = questions.getQuestion();
 						questionCount++;
 						questionAnswers = 0;
+						correctAnswers = 0;
 						setQuestionDisplay();
 						
 						//Send next question to clients
@@ -216,6 +219,9 @@
 			$("#gamesetup").hide();
 			$("#scores").hide();
 			$("#questions").hide();
+			$("#score1container").removeClass("span11").addClass("span5");
+			$("#question_title").text("");
+			$("#question_value").text("");
 		}
 		
 		function setQuestionDisplay()
