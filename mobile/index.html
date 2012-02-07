@@ -7,142 +7,6 @@
 		
 		<link href="../bootstrap/css/bootstrap.css" rel="stylesheet">
 		<link rel="stylesheet" href="css/mobile.css" />
-		
-		<script src="js/phonegap.js" type="text/javascript"></script>
-		<script src="http://live.betaclik.com/js/clik-mobile.min.js" type="text/javascript"></script>
-		<script src="../manifest.js" type="text/javascript"></script>
-		
-		<script type="text/javascript">
-		
-			var currentQuestion;
-			
-			clik.onMessage = function(msg) {
-			
-				var msg = $.parseJSON(msg);
-				
-				if ( msg.action == "choosePlayers" )
-				{
-					$("#setup").show();
-					$("#multiplayer_connect").hide();
-				}
-				else if ( msg.action == "startGame" )
-				{					
-					$("#singlerow").hide();
-					$("#multirow").hide();
-					$("#multiplayer_connect").hide();
-					$("#answers").show();
-					$("#title").hide();
-					
-					buildAnswerHTML(msg.question);
-				}
-				else if ( msg.action == "gameOver" )
-				{
-					if ( msg.winner == clik.getParticipantId() || msg.winner == "" )
-					{
-						$("#questiontitle").text("You Win!!");
-					}
-					else
-					{
-						$("#questiontitle").text("You Lose!!");
-					}
-					
-					var html = new Array();
-					
-					html.push("<div id=\"singlerow\" class=\"row\">");
-					html.push("	<a class=\"btn btn-large btn-primary resetbutton\" style=\"width: 90%;\" href=\"javascript:sendAnswer(-1);\">Quit</a>");
-					html.push("</div>");
-					html.push("<br/>");
-					
-					$("#answers").html(html.join(""));
-					
-					$('.resetbutton').click(function() {
-						clik.sendMessage("{\"action\":\"restart\"}");
-						clik.close(true);
-					});
-				}
-			}
-
-			clik.onJoin = function(newParticipant) {
-				//Lets not worry about other joining on the client let the server worry about it
-			}
-
-			clik.onReady = function() {
-				//Nothing to see here
-			}
-			
-			$(function() {
-			
-				clik.init();
-				
-				//Hack -- clik.getParticipantId() seems to return null until I have sent a msg and called it once
-				clik.sendMessage("");
-				clik.getParticipantId();
-				
-				$("#singleplayer").click(function() {
-					choosePlayers(1);
-				});
-				
-				$("#multiplayer").click(function() {
-					choosePlayers(2);
-					$("#singlerow").hide();
-					$("#multirow").hide();
-					$("#multiplayer_connect").show();
-				});
-				
-				$("#cancel").click(function() {
-					clik.sendMessage("{\"action\":\"restart\"}");
-					clik.close(false);
-				});
-			});
-			
-			function choosePlayers(players)
-			{
-				clik.sendMessage("{\"action\":\"getplayers\", \"count\":\"" + players + "\"}");
-				$("#cancel").show();
-			}
-			
-			function buildAnswerHTML(msg)
-			{
-				//save for later so we can check answer locally before sending response to server
-				currentQuestion = msg;
-				
-				var html = new Array();
-				
-				for ( var i=0; i<4; i++ )
-				{
-					html.push("<div id=\"singlerow\" class=\"row\">");
-					html.push("<a class=\"btn btn-large btn-primary answerbutton\" style=\"width: 80%;\" href=\"javascript:sendAnswer(");
-					html.push(i);
-					html.push(");\">");
-					html.push(msg.answers[i]);
-					html.push("</a>");
-					html.push("</div>");
-					html.push("<br/>");
-				}
-				
-				$("#answers").html(html.join(""));
-				$("#questiontitle").text(msg.text);
-			}
-			
-			function sendAnswer(val)
-			{
-				var html = new Array();
-				
-				if ( currentQuestion.correct != val )
-				{
-					$(".answerbutton").addClass("disabled");
-				}
-				
-				clik.sendMessage("{\"action\":\"answer\", \"value\":\"" + val + "\", \"participant\":\"" + clik.getParticipantId() + "\", \"pos\":\"" + val + "\"}");
-				
-				html.push("<h3 id=\"gamesetup_title\">Loading question...</h3>");
-				html.push("<div id=\"progress\" class=\"progress progress-info progress-striped active\">");
-				html.push("	<div class=\"bar\" style=\"width: 100%;\"></div>");
-				html.push("</div>");
-				
-				$("#answers").html(html.join(""));
-			}
-		</script>
 	</head>
 	<body>
 		<div class="container mobilewrapper">
@@ -166,7 +30,7 @@
 			<div id="multiplayer_connect" class="row">
 				<h3 id="gamesetup_title">Get Ready...</h3>
 				<div id="progress" class="progress progress-info progress-striped active">
-					<div class="bar width100"></div>
+					<div class="bar" style="width: 100%;"></div>
 				</div>
 				<a id="cancel" style="display: none;" href="#" class="btn btn-large btn-primary width80">Cancel</a>
 			</div>
@@ -176,4 +40,139 @@
 			<span id="participantId" style="display:none;"></span>
 		</div>
 	</body>
+	<script src="js/phonegap.js" type="text/javascript"></script>
+	<script src="http://live.betaclik.com/js/clik-mobile.min.js" type="text/javascript"></script>
+	<script src="../manifest.js" type="text/javascript"></script>
+	
+	<script type="text/javascript">
+	
+		var currentQuestion;
+		
+		clik.onMessage = function(msg) {
+		
+			var msg = $.parseJSON(msg);
+			
+			if ( msg.action == "choosePlayers" )
+			{
+				$("#setup").show();
+				$("#multiplayer_connect").hide();
+			}
+			else if ( msg.action == "startGame" )
+			{					
+				$("#singlerow").hide();
+				$("#multirow").hide();
+				$("#multiplayer_connect").hide();
+				$("#answers").show();
+				$("#title").hide();
+				
+				buildAnswerHTML(msg.question);
+			}
+			else if ( msg.action == "gameOver" )
+			{
+				if ( msg.winner == clik.getParticipantId() || msg.winner == "" )
+				{
+					$("#questiontitle").text("You Win!!");
+				}
+				else
+				{
+					$("#questiontitle").text("You Lose!!");
+				}
+				
+				var html = new Array();
+				
+				html.push("<div id=\"singlerow\" class=\"row\">");
+				html.push("	<a class=\"btn btn-large btn-primary resetbutton\" style=\"width: 90%;\" href=\"javascript:sendAnswer(-1);\">Quit</a>");
+				html.push("</div>");
+				html.push("<br/>");
+				
+				$("#answers").html(html.join(""));
+				
+				$('.resetbutton').click(function() {
+					clik.sendMessage("{\"action\":\"restart\"}");
+					clik.close(true);
+				});
+			}
+		}
+
+		clik.onJoin = function(newParticipant) {
+			//Lets not worry about other joining on the client let the server worry about it
+		}
+
+		clik.onReady = function() {
+			//Nothing to see here
+		}
+		
+		$(function() {
+		
+			clik.init();
+			
+			//Hack -- clik.getParticipantId() seems to return null until I have sent a msg and called it once
+			clik.sendMessage("");
+			clik.getParticipantId();
+			
+			$("#singleplayer").click(function() {
+				choosePlayers(1);
+			});
+			
+			$("#multiplayer").click(function() {
+				choosePlayers(2);
+				$("#singlerow").hide();
+				$("#multirow").hide();
+				$("#multiplayer_connect").show();
+			});
+			
+			$("#cancel").click(function() {
+				clik.sendMessage("{\"action\":\"restart\"}");
+				clik.close(false);
+			});
+		});
+		
+		function choosePlayers(players)
+		{
+			clik.sendMessage("{\"action\":\"getplayers\", \"count\":\"" + players + "\"}");
+			$("#cancel").show();
+		}
+		
+		function buildAnswerHTML(msg)
+		{
+			//save for later so we can check answer locally before sending response to server
+			currentQuestion = msg;
+			
+			var html = new Array();
+			
+			for ( var i=0; i<4; i++ )
+			{
+				html.push("<div id=\"singlerow\" class=\"row\">");
+				html.push("<a class=\"btn btn-large btn-primary answerbutton\" style=\"width: 80%;\" href=\"javascript:sendAnswer(");
+				html.push(i);
+				html.push(");\">");
+				html.push(msg.answers[i]);
+				html.push("</a>");
+				html.push("</div>");
+				html.push("<br/>");
+			}
+			
+			$("#answers").html(html.join(""));
+			$("#questiontitle").text(msg.text);
+		}
+		
+		function sendAnswer(val)
+		{
+			var html = new Array();
+			
+			if ( currentQuestion.correct != val )
+			{
+				$(".answerbutton").addClass("disabled");
+			}
+			
+			clik.sendMessage("{\"action\":\"answer\", \"value\":\"" + val + "\", \"participant\":\"" + clik.getParticipantId() + "\", \"pos\":\"" + val + "\"}");
+			
+			html.push("<h3 id=\"gamesetup_title\">Loading question...</h3>");
+			html.push("<div id=\"progress\" class=\"progress progress-info progress-striped active\">");
+			html.push("	<div class=\"bar\" style=\"width: 100%;\"></div>");
+			html.push("</div>");
+			
+			$("#answers").html(html.join(""));
+		}
+	</script>
 </html>
