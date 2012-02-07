@@ -1,3 +1,30 @@
+html {
+	height: 100%;
+}
+body {
+	padding-top: 10px;
+	background: -webkit-linear-gradient(bottom, rgba(0,0,0,0.45) 0%,rgba(0,0,0,0) 100%);
+}
 input {
 	font-size: 0.8em;
 }
+
+.center {
+	text-align: center;
+}
+.title {
+	padding: 10% 0px;
+	text-align: center;
+}
+.width80 {
+	width: 80%;
+}
+.width100 {
+	width: 100%;
+}
+.mobilewrapper {
+	text-align: center;
+	margin: 0 auto;
+}
+
+#clik-paper { display: none !important; }

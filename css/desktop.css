@@ -1,24 +1,48 @@
+/* Global Overrides */
 body {
 	background-color: #ffffff;
+	padding-top: 60px;
+	padding-bottom: 40px;
 }
 
+/* Global Styles */
+.hidden {display:none;}
+.fr {float: right;}
+.fl {float: left;}
+.white { color: white; }
+
+/* Page Styles */
+.titlecontainer {
+	float: left;
+	line-height: 300px;
+}
+.qrstatusrow {
+	text-align:center;
+	margin: 0 auto;
+}
+.scorecontainer {
+	text-align: center;
+}
+.questions {
+	display: none;
+	height: 300px;
+	padding-top: 110px;
+}
+.gameloading {
+	width: 400px;
+	margin: 0 auto;
+	display: none;
+}
+
+#clik-overlay { background-color: #333333; }
+#clik-paper { display: none !important; }
 #qrContainer {
-	width:300px;
-	height:300px;
-	float:left;
-	border-right: 1px solid black;
+	width:500px;
+	height:500px;
+	margin: 0 auto;
 	background-position:center;
 	background-repeat:no-repeat;
 	background-origin:content-box;
 	padding:10px;
 	background-size: contain;
-}
-
-#stage {
-	float:right;
-}
-
-.label {
-	width: 150px;
-	float:left;
 }

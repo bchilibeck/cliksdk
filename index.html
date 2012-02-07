@@ -1,109 +1,231 @@
 <html>
 	<head>
-		<title>Example App</title>
+		<title>Clik Trivia</title>
+		
 		<link rel="stylesheet" href="css/desktop.css" />
+		<link href="bootstrap/css/bootstrap.css" rel="stylesheet">
+		
 		<script src="http://live.betaclik.com/js/clik-desktop.min.js" type="text/javascript"></script>
+		<script src="js/cliktriva.js" type="text/javascript"></script>
 		<script src="manifest.js" type="text/javascript"></script>
+		
 		<!-- User JavaScript -->
 		<script type="text/javascript">
-			// This is the page that the desktop client sees.
 
-			// There's an objects called 'clik'.
-			// It has members that are functions that are called when things happen.
-
-			// Whenever we recieve a message.
+			var questions = new questionGenerator();
+			var clikTrivia = new ClikTrivia();
+			var questionCount = 1;
+			var questionAnswers = 0;
+			var currentQuestion;
+			
 			clik.onMessage = function(msg) {
-				// Stick the message at the top of the 'messageLog' element.
-				$("#messageLog").prepend(msg + "<hr/>")
+			
+				var msg = $.parseJSON(msg);
+				
+				if ( msg.action == "getplayers" )
+				{
+					//Were setting up a 2 player game
+					if ( msg.count == 2 )
+					{
+						$("#qrContainer").show();
+						$("#gamesetup_title").text("Player 2 Scan Now!!");
+					}
+					else
+					{
+						currentQuestion = questions.getQuestion(0);
+						setQuestionDisplay();
+							
+						clik.sendMessage("{\"participant\":\"\", \"action\":\"startGame\", \"question\": " + questions.getQuestionJSON(currentQuestion) + "}");
+						
+						$("#qrContainer").hide();
+						$("#gamesetup").hide();
+						$("#scores").show();
+						$("#questions").show();
+						
+						//change the score containter to full width and hide for player 2
+						$("#score1container").removeClass("span5").addClass("span11");
+						$("#score2container").hide();
+					}
+				}
+				else if ( msg.action == "answer" )
+				{
+					questionAnswers++;
+					
+					//The answer is correct or the number of incorrect answers is equal to the number of players
+					var correctAnswer = currentQuestion.correct == msg.pos;
+					
+					if ( correctAnswer )
+					{
+						clikTrivia.addScore(msg.participant, questionAnswers);
+					
+						//Update scores and question text
+						$("#score1").text("Player 1 - " + clikTrivia.getScorePos(0) + " pts");
+						$("#score2").text("Player 2 - " + clikTrivia.getScorePos(1) + " pts");
+					}
+						
+					//Game over
+					if ( questionCount == 10 )
+					{							
+						$("#question_title").text("Game Over!");
+						
+						if ( clikTrivia.getNumPlayers() > 1 )
+						{
+							if ( clikTrivia.getScorePos(0) > clikTrivia.getScorePos(1) )
+							{							
+								$("#question_value").text("Player 1 Wins!");
+								sendGameOverMessage(clikTrivia.getPlayer(0));
+							}
+							else
+							{
+								$("#question_value").text("Player 2 Wins!");
+								sendGameOverMessage(clikTrivia.getPlayer(1));
+							}
+						}
+						else
+						{
+							$("#question_value").text("You scored " + clikTrivia.getScorePos(0) + " pts");
+							sendGameOverMessage("");
+						}
+					}
+					else
+					{	
+						if ( questionAnswers == clikTrivia.getNumPlayers() )
+						{
+							currentQuestion = questions.getQuestion();
+							questionCount++;
+							questionAnswers = 0;
+							setQuestionDisplay();
+							
+							//Send next question to clients
+							clik.sendMessage("{\"participant\":\"\", \"action\":\"startGame\", \"question\": " + questions.getQuestionJSON(currentQuestion) + "}");
+						}
+					}
+				}
+				else if ( msg.action == "restart" )
+				{
+					resetGame();
+				}
 			}
+			
 			// Whenever someone joins the conference.
 			clik.onJoin = function(newParticipant) {
-				// Build an <li> entry for this participant, ensuring it's not already there.
-				var partEleKey = "part" + newParticipant;
-				if($("#" + partEleKey).length == 0) {
-					var sb = new Array();
-					sb.push("<li id=\"");
-					sb.push(partEleKey);
-					sb.push("\">");
-					sb.push(newParticipant);
-					sb.push("</li>");
-					$("#parts").prepend(sb.join(""));
+				
+				//We know this is the first player to join lets ask them to configure the game
+				if ( clikTrivia.checkPlayer(newParticipant) && clikTrivia.getNumPlayers() == 0)
+				{
+					clikTrivia.addPlayer(newParticipant);
+					$("#qrContainer").hide();
+					$("#gamesetup").show();
+					clik.sendMessage("{\"participant\":\"" + newParticipant + "\", \"action\":\"choosePlayers\"}");
 				}
-
-				// Say hello
-				clik.sendMessage("Hello " + newParticipant + ", I'm " + clik.getParticipantId());
+				else if ( clikTrivia.checkPlayer(newParticipant) )
+				{
+					currentQuestion = questions.getQuestion();
+					clikTrivia.addPlayer(newParticipant);
+					
+					//Delay the start so both clients can get connected
+					setTimeout(function(){startGame(newParticipant)}, 2500);
+				}
 			}
+			
 			// Whenever someone leaves the conference.
 			clik.onPart = function(oldParticipant) {
-				// Remove the <li> we created when the person joined.
-				$("#messageLog").prepend("Part: " + oldParticipant + "<hr/>");
-				var partEleKey = "part" + oldParticipant;
-				$("#" + partEleKey).remove();
+				resetGame();
 			}
+			
 			// When we've successfully connected to the conference
-			// Note: this is optional, if it isn't set, Clik will overlay the page with a QR code.
 			clik.onReady = function() {
-				clik.showClikCode();
-
-				// Hey look, some other methods we can call on the 'clik' object.
+				//clik.showClikCode();
 				$("#qrContainer").css('background-image', 'url(' + clik.ui.clikCodeUrl() + ')');
 				$("#conferenceId").val(clik.getConferenceId());
 				$("#participantId").val(clik.getParticipantId());
 			}
+			
 			// Finally, we tell Clik to initialize.
 			clik.init();
-
-			// And start worrying about OUR logic (i.e. not directly related to clik events).
-			// All we'll do is send a message whenever someone clicks the 'say' button.
-			$(function() {
-				$("#say").click(function() {
-					var txt = $("#textInput").val();
-					clik.sendMessage(txt);
-				});
-			});
-
-		</script>
-		<style type="text/css">
-			#clik-overlay {
-				background-color: #333333;
+			
+			function startGame(newParticipant)
+			{
+				clik.sendMessage("{\"participant\":\"" + newParticipant + "\", \"action\":\"startGame\", \"question\": " + JSON.stringify(currentQuestion) + "}");
+					
+				$("#qrContainer").hide();
+				$("#gamesetup").hide();
+				$("#scores").show();
+				$("#questions").show();
 			}
-		</style>
+			
+			function resetGame()
+			{
+				clikTrivia = new ClikTrivia();
+				questions = new questionGenerator();
+				questionCount = 1;
+				questionAnswers = 0;
+				
+				$("#score1").text("Player 1 - 0 pts");
+				$("#score2").text("Player 2 - 0 pts");
+				$("#qrContainer").show();
+				$("#gamesetup").hide();
+				$("#scores").hide();
+				$("#questions").hide();
+			}
+			
+			function setQuestionDisplay()
+			{
+				$("#question_title").text("Question " + questionCount + ":");
+				$("#question_value").text(currentQuestion.text);
+			}
+			
+			function sendGameOverMessage(participant)
+			{
+				clik.sendMessage("{\"action\":\"gameOver\", \"winner\":\"" + participant + "\"}");
+			}
+		</script>
 	</head>
+	
 	<body>
-		<div id="qrContainer"></div>
-		<div id="stage">
-			<div>
-				<div class="label">
-					Conference
+		<div class="container">
+		
+			<div class="hero-unit" style="padding: 30px;">
+				<div style="height: 100px;">
+					<div class="titlecontainer">
+						<h1 class="white">Clik Trivia</h1>
+						<p class="white">Challenge a friend to a 10 question game!</p>
+					</div>
 				</div>
-				<input id="conferenceId" size="36" />
-				<br />
-				<div class="label">
-					Participant
-				</div>
-				<input id="participantId" value="" size="36" />
-				<br />
 			</div>
-			<hr/>
-			<div>
-				<div class="label">
-					Say:
+			
+			<div class="row qrstatusrow">
+				<div id="qrContainer">
 				</div>
-				<input id="textInput" value="Hello world" size="36" />
-				<br/>
-				<div class="label">
-					&nbsp;
+					
+				<div id="gamesetup" class="well gameloading">
+					<h2 id="gamesetup_title">Player is setting up game...</h2>
+					<div id="progress" class="progress progress-info progress-striped active">
+						<div class="bar" style="width: 100%;"></div>
+					</div>
 				</div>
-				<input type="button" id="say" value="Say" />
+				
+				<div id="questions" class="questions">
+					<h1 id="question_title">Get Ready!</h1>
+					<br />
+					<h1 id="question_value">Look at the phone :)</h1>
+				</div>
+				
 			</div>
-			<h1>Participants</h1>
-			<ul id="parts"></ul>
-			<h1>Messages</h1>
-			<div id="messageLog"></div>
-			<div id="debugContainer" style="display:none">
-				<h1>Debug Log</h1>
-				<div id="debug"></div>
+			
+			<div id="scores" class="row" style="margin: 0 auto; display: none;">
+				<div id="score1container" class="span5 well scorecontainer">
+					<h1 id="score1">Player 1 - 0 pts</h1>
+				</div>
+				<div id="score2container" class="span5 well scorecontainer">
+					<h1 id="score2">Player 2 - 0 pts</h1>
+				</div>
 			</div>
+			
+			<hr>
+			<footer>
+				<p>&copy; Ben 2012</p>
+			</footer>
 		</div>
 	</body>
 </html>
